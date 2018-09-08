@@ -10,7 +10,7 @@ Clocking
 c ---+   +---+   +---
 r  0   1   1   1   0
 w  0   0   1   0   0
-s  0   1   1   0   0
+c  0   1   1   0   0
 
 
 ALU
@@ -19,89 +19,121 @@ ALU
 Operations:
 add
 sub
+mov
 inc
 dec
-cmp
+
+
+Registers
+---------
+
+ACC |....| -> FR[z]
+PC  |....|
+IR  |....|
+TMP |....|
+RES |....|
+MAR |....|
 
 
 Instructions
 ------------
 
-ifetch
-  S1: pc_r=1; a_w=1; b_en=0; op=0; cin=1; d_w=1; mar_w=1;
-  S2: d_r=1; pc_w=1;
-  S3: mem_r=1; ir_w=1;
+        |7 6 5 4 3 2 1 0|
+Format: | op  |m|  imm  |
 
-0000 ra rb    mov  ra, rb
-  S4: rb_r=1; a_w=1;
-  S5: b_en=0; op=0; cin=0; d_w=1;
-  S6: d_r=1; ra_w=1;
-
-0001 ra xx    data ra, imm8
-  S4: pc_r=1; a_w=1; mar_w=1; b_en=0; op=0; cin=1; d_w=1;
-  S5: d_r=1; pc_w=1;
-  S6: mem_r=1; ra_w=1;
-    
-0010 ra rb    ldr  ra, [rb]
-  S4: rb_r=1; mar_w=1;
-  S5: mem_r=1; ra_w=1;
-  S6:
-
-0011 ra rb    str  ra, [rb]
-  S4: rb_r=1; mar_w=1;
-  S5: ra_r=1; mem_w=1;
-  S6:
-
-0101 00 00    br   imm8
-0101 00 01    brz  imm8
-0101 00 10    brnz imm8
-  S4: pc_r=1; a_w=1; mar_w=1; b_en=0; op=0; cin=1; d_w=1;
-  S5: d_r=1; pc_w=1;
-  S6: br_en=1; if cond==flags: mem_r=1; pc_w=1;
-
-0110 xx xx    halt
-  S4:
-  S5:
-  S6: halt=1;
-
-1000 ra rb    add  ra, rb
-  S4: ra_r=1; a_w=1;
-  S5: rb_r=1; b_en=1; op=0; cin=0; fr_w=1; d_w=1;
-  S6: d_r=1; ra_w=1;
-
-1001 ra rb    sub  ra, rb
-  S4: ra_r=1; a_w=1;
-  S5: rb_r=1; b_en=1; op=1; cin=0; fr_w=1; d_w=1;
-  S6: d_r=1; ra_w=1;
+0000 imm  -  add imm    -  ACC = ACC + imm
+0001 imm  -  add [imm]  -  ACC = ACC + [imm]
+0010 imm  -  sub imm    -  ACC = ACC - imm
+0011 imm  -  sub [imm]  -  ACC = ACC - [imm]
+0100 imm  -  mov imm    -  ACC = imm
+0101 imm  -  ld  [imm]  -  ACC = [imm]
+011x imm  -  str [imm]  -  [imm] = ACC
+1000 imm  -  bz  imm    -  if ACC == 0: NPC = imm
+1001 imm  -  bz  [imm]  -  if ACC == 0: NPC = [imm]
+1010 imm  -  bnz imm    -  if ACC != 0: NPC = imm
+1011 imm  -  bnz [imm]  -  if ACC != 0: NPC = [imm]
+1100 imm  -  jmp imm    -  NPC = imm
+1101 imm  -  jmp [imm]  -  NPC = [imm]
+111x imm  -  halt       -  ignore clock
 
 
-Microinstruction
-----------------
+Microcode
+---------
 
-µInstr[ 0]: r0_w
-µInstr[ 1]: r0_r
-µInstr[ 2]: r1_w
-µInstr[ 3]: r1_r
-µInstr[ 4]: r2_w
-µInstr[ 5]: r2_r
-µInstr[ 6]: r3_w
-µInstr[ 7]: r3_r
+ifetch:
+s1: pc_r=1, rommar_w=1, temp_w=1
+s2: muxB=0, alu=add, cin=1, res_w=1, irom_r=1, ir_w=1
+s3: res_r=1, pc_w=1
 
-µInstr[ 8]: b_en
-µInstr[ 9]: ra_w
-µInstr[10]: rd_w
-µInstr[11]: rd_r
-µInstr[12]: cin
-µInstr[13]: sub
-µInstr[14]: fr_w
-µInstr[15]:
+000x: add
+s4: drom_r=1, mar_w=1
+s5: acc_r=1, temp_w=1
+s6: drom_r=~op[0], ram_r=op[0], muxB=1, alu=add, cin=0, res_w=1
+s7: res_r=1, acc_w=1
 
-µInstr[16]: pc_w
-µInstr[17]: pc_r
-µInstr[18]: ir_w
-µInstr[19]:
+001x: sub
+s4: drom_r=1, mar_w=1
+s5: acc_r=1, temp_w=1
+s6: drom_r=~op[0], ram_r=op[0], muxB=1, alu=sub, cin=0, res_w=1
+s7: res_r=1, acc_w=1
 
-µInstr[20]: mar_w
-µInstr[21]: mem_w
-µInstr[22]: mem_r
-µInstr[23]: 
+010x: mov/ld
+s4: drom_r=1, mar_w=1
+s5: acc_r=1
+s6: drom_r=~op[0], ram_r=op[0], acc_w=1
+s7: 
+
+011x: str
+s4: drom_r=1, mar_w=1
+s5: acc_r=1, ram_w=1
+s6: drom_r=~op[0], ram_r=op[0]
+s7: 
+
+100x: bz
+s4: drom_r=1, mar_w=1
+s5: 
+s6: drom_r=~op[0], ram_r=op[0], pc_w=fr[z]
+s7: 
+
+101x: bnz
+s4: drom_r=1, mar_w=1
+s5: 
+s6: drom_r=~op[0], ram_r=op[0], pc_w=~fr[z]
+s7: 
+
+110x: jmp
+s4: drom_r=1, mar_w=1
+s5: 
+s6: drom_r=~op[0], ram_r=op[0], pc_w=1
+s7: 
+
+111x: halt
+s4: drom_r=1, mar_w=1
+s5: 
+s6: drom_r=~op[0], ram_r=op[0]
+s7: halt=1
+
+
++halt           s7 & (op==111x)
+
++rommar_w  s1
++irom_r    s2
++drom_r    s4 | s6 & ~op[0]
+
++pc_r      s1
++pc_w      s3 | s6 & (op==100x & fr[z] | op==101x & ~fr[z] | op==110x)
++ir_w      s2
+
++mar_w     s4
++ram_r          s6 & op[0]
++ram_w          s5 & (op==011x)
+
++acc_r          s5 & (op==0xxx)
++acc_w          s6 & (op==010x) | s7 & (op==00xx)
+
++temp_w    s1 | s5 & (op==00xx)
++muxB           s6 & (op==00xx)
++res_r     s3 | s7 & (op==00xx)
++res_w     s2 | s6 & (op==00xx)
++aluop          s6 & (op==xx1x)
++cin       s2
