@@ -26,17 +26,22 @@ information regarding the usage of Logisim.
 Registers
 ---------
 
+```
 ACC |....|
 PC  |....|
 IR  |....|
+```
 
 
 Instructions
 ------------
 
+```
         |7 6 5 4 3 2 1 0|
 Format: | op  |m|  imm  |
+```
 
+```
 0000 imm  -  add imm    -  ACC = ACC + imm
 0001 imm  -  add [imm]  -  ACC = ACC + RAM[imm]
 0010 imm  -  sub imm    -  ACC = ACC - imm
@@ -51,4 +56,4 @@ Format: | op  |m|  imm  |
 1100 imm  -  jmp imm    -  PC = imm
 1101 imm  -  jmp [imm]  -  PC = RAM[imm]
 111x imm  -  halt       -  ignore clock
-
+```
