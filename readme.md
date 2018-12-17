@@ -1,18 +1,17 @@
 Nibble CPU
 ==========
 
-The Nibble CPU is a simple 4bit processor for teaching purposes. There is a version based upon
-latches and an optimized version based upon flip-flops. Both CPUs have the following
-characteristics:
+The Nibble CPU is a simple 4bit processor for teaching purposes. Version 0 is based on a shared-bus
+architecture and uses latches. Version 1 has a datapath and uses flip-flops, thus being faster.
+Both CPUs have the following characteristics:
 
 - 4bit ALU for addtion and subtraction
-- Accumulator architecture (Latch version: bus architecture)
 - 4bit instruction code + 4bit of immediate value
 - 2 addressing modes (immediate, absolute)
 - 16 half-bytes of RAM
 - 16 bytes of ROM for code
 - 2 clock ticks per cycle
-- 2 cylces per instruction (Latch version: 7 cycles)
+- v0: 7 cylces per instruction, v1: 2 cycles per instruction
 
 
 Usage
